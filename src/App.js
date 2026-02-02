@@ -5,7 +5,7 @@ import {
   Wallet, ArrowUpCircle, ArrowDownCircle, History, 
   PlusCircle, Trash, Pencil, LogOut, Loader2, 
   Search, Calendar, Camera, Moon, Sun,
-  Briefcase, TrendingUp, TrendingDown, LayoutDashboard
+  Briefcase, TrendingUp, TrendingDown, LayoutDashboard, Download
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Legend } from 'recharts';
 
@@ -194,6 +194,40 @@ export default function FinanceApp() {
   if (!session) return <Auth />;
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
 
+  // --- FUNÇÃO DE EXPORTAÇÃO (CSV) ---
+  const handleExport = () => {
+    // 1. Cabeçalho do CSV (Separado por ponto e vírgula para Excel PT-BR)
+    const header = ["Data;Tipo;Categoria;Descrição;Valor;Origem\n"];
+
+    // 2. Processa Transações
+    const csvTrans = transactions.map(t => {
+      const date = new Date(t.date).toLocaleDateString('pt-BR');
+      const amount = t.amount.toString().replace('.', ','); // Troca ponto por vírgula pro Excel entender como número
+      const type = t.type === 'income' ? 'Receita' : 'Despesa';
+      return `${date};${type};${t.category};${t.description};${amount};Caixa`;
+    });
+
+    // 3. Processa Investimentos
+    const csvInvest = investments.map(i => {
+      const date = new Date(i.created_at).toLocaleDateString('pt-BR');
+      const amount = i.current_value.toString().replace('.', ',');
+      return `${date};Investimento;${i.type};${i.name};${amount};Carteira`;
+    });
+
+    // 4. Junta tudo em um BLOB (Arquivo na memória)
+    const csvContent = header.concat(csvTrans).concat(csvInvest).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    // 5. Cria link falso para download
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `financepro_relatorio_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-gray-100 font-sans pb-10 transition-colors duration-300">
       
@@ -224,6 +258,14 @@ export default function FinanceApp() {
 
           <div className="flex items-center gap-3">
             <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600">{darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}</button>
+            {/* NOVO: Botão Exportar */}
+            <button 
+              onClick={handleExport} 
+              title="Baixar Relatório (CSV)"
+              className="p-2 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-600 dark:hover:text-green-400 transition-colors"
+            >
+              <Download className="w-5 h-5" />
+            </button>
             <button onClick={() => supabase.auth.signOut()} className="text-gray-500 dark:text-slate-400 hover:text-red-600"><LogOut className="w-5 h-5" /></button>
           </div>
         </div>
