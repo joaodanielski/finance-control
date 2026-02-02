@@ -1,3 +1,6 @@
+import Tesseract from 'tesseract.js';
+import { Camera } from 'lucide-react'; // Adicione o ícone da Camera aqui
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient'; // Importa nossa conexão
 import { Plus, Trash2, Edit2, TrendingUp, TrendingDown, DollarSign, List, LogOut, Loader2 } from 'lucide-react';
@@ -133,6 +136,76 @@ export default function FinanceApp() {
     }
   };
 
+  // --- Lógica de OCR ---
+  const [isScanning, setIsScanning] = useState(false);
+
+  const processReceiptImage = async (imageFile) => {
+    setIsScanning(true);
+    try {
+      // 1. Executa o Tesseract (Português)
+      const { data: { text } } = await Tesseract.recognize(
+        imageFile,
+        'por', // Idioma português
+        { logger: m => console.log(m) } // Log de progresso no console
+      );
+
+      console.log("Texto extraído:", text); // Para depuração
+
+      // 2. Inteligência de Extração (Regex)
+      
+      // Procura datas (ex: 25/12/2023 ou 25-12-23)
+      const dateRegex = /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/;
+      const dateMatch = text.match(dateRegex);
+      
+      // Procura valores monetários (ex: 100,00 ou 100.00)
+      // Essa regex procura números que tenham vírgula ou ponto seguidos de 2 digitos, 
+      // ignorando números de telefone ou CEPs longos
+      const priceRegex = /(?:R\$ ?)?(\b\d{1,3}(?:\.\d{3})*,\d{2}\b|\b\d+\.\d{2}\b)/g;
+      const prices = text.match(priceRegex);
+
+      // Lógica para pegar o MAIOR valor encontrado (geralmente é o total)
+      let maxAmount = '';
+      if (prices) {
+        const cleanPrices = prices.map(p => parseFloat(p.replace('R$', '').replace('.', '').replace(',', '.').trim()));
+        const maxVal = Math.max(...cleanPrices);
+        if (maxVal > 0) maxAmount = maxVal.toFixed(2); // Formato para o input
+      }
+
+      // 3. Formatar Data para o Input (YYYY-MM-DD)
+      let formattedDate = new Date().toISOString().split('T')[0]; // Hoje (fallback)
+      if (dateMatch) {
+        const day = dateMatch[1].padStart(2, '0');
+        const month = dateMatch[2].padStart(2, '0');
+        // Assume ano atual se achar só 2 digitos, ou usa o encontrado
+        const year = dateMatch[3].length === 2 ? `20${dateMatch[3]}` : dateMatch[3];
+        formattedDate = `${year}-${month}-${day}`;
+      }
+
+      // 4. Preencher o Formulário
+      setFormData(prev => ({
+        ...prev,
+        description: 'Compra Detectada (OCR)', // Descrição genérica (difícil extrair nome da loja sem IA avançada)
+        amount: maxAmount || prev.amount,
+        date: formattedDate
+      }));
+
+      alert('Leitura concluída! Verifique os valores.');
+
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao ler a imagem. Tente uma foto mais clara.');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handleCameraInput = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      processReceiptImage(file);
+    }
+  };
+
   // Cálculos (Mantidos do anterior)
   const filteredTransactions = useMemo(() => transactions.filter(t => t.date.startsWith(filterDate)), [transactions, filterDate]);
   const summary = useMemo(() => filteredTransactions.reduce((acc, curr) => { const amt = parseFloat(curr.amount); if(curr.type === 'income') { acc.income += amt; acc.total += amt; } else { acc.expense += amt; acc.total -= amt; } return acc; }, { income: 0, expense: 0, total: 0 }), [filteredTransactions]);
@@ -164,7 +237,41 @@ export default function FinanceApp() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Plus className="w-5 h-5 text-blue-600" />{editingId ? 'Editar' : 'Nova Transação'}</h2>
+              {/* INICIO DO NOVO CABEÇALHO COM CÂMERA */}
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold flex items-center gap-2 text-gray-800">
+                  <PlusCircle className="w-5 h-5 text-blue-600" />
+                  {editingId ? 'Editar Lançamento' : 'Nova Transação'}
+                </h2>
+                
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleCameraInput}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                    disabled={isScanning}
+                  />
+                  <button 
+                    type="button" 
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${isScanning ? 'bg-gray-100 text-gray-400' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
+                  >
+                    {isScanning ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Lendo...
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="w-4 h-4" />
+                        Escanear Nota
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+              {/* FIM DO NOVO CABEÇALHO */}
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2"><label className="text-xs font-bold text-gray-500 uppercase">Descrição</label><input required type="text" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" /></div>
                 <div><label className="text-xs font-bold text-gray-500 uppercase">Valor</label><input required type="number" step="0.01" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" /></div>
