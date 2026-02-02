@@ -1,5 +1,5 @@
 import Tesseract from 'tesseract.js';
-import { Camera } from 'lucide-react'; // Adicione o ícone da Camera aqui
+import {PlusCircle, Camera } from 'lucide-react'; // Adicione o ícone da Camera aqui
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient'; // Importa nossa conexão
