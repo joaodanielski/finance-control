@@ -1,3 +1,6 @@
+// src/App.js
+// Importações
+
 import React, { useState, useEffect, useMemo } from "react";
 import { supabase } from "./supabaseClient";
 import Tesseract from "tesseract.js";
@@ -33,7 +36,7 @@ import {
   Tooltip,
 } from "recharts";
 
-// --- CONFIGURAÇÕES ---
+// --- CONSTANTES ---
 const CATEGORIES = [
   "Alimentação",
   "Moradia",
@@ -59,13 +62,13 @@ const COLORS = [
   "#8B5CF6",
   "#EC4899",
 ];
-
+// Formatação de moeda BRL
 const formatCurrency = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     value,
   );
 
-// --- COMPONENTES UI ---
+// --- COMPONENTE CARD DE RESUMO ---
 const Card = ({ title, value, icon: Icon, type, subtitle }) => {
   let colorClass = "text-blue-600 dark:text-blue-400";
   let bgClass = "bg-blue-50 dark:bg-blue-900/20";
@@ -101,7 +104,7 @@ const Card = ({ title, value, icon: Icon, type, subtitle }) => {
   );
 };
 
-// --- AUTH COMPONENT ---
+// --- COMPONENTE DE AUTENTICAÇÃO ---
 const Auth = () => {
   const [loading, setLoading] = useState(false);
   const handleLogin = async () => {
