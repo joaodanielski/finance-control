@@ -1,70 +1,74 @@
-# Getting Started with Create React App
+# FINANCEPRO v3.0
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Uma aplicação completa de gestão financeira pessoal (PWA) desenvolvida com React, Tailwind CSS e Supabase. O app gerencia fluxo de caixa, carteira de investimentos e metas financeiras.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+FUNCIONALIDADES
 
-### `npm start`
+1. Caixa: Controle de receitas e despesas com leitura automática de comprovantes (OCR).
+2. Investimentos: Gestão de ativos (Ações, Cripto, FIIs) com cálculo automático de ROI.
+3. Metas: Definição de objetivos financeiros com barra de progresso visual.
+4. Extras: Modo Escuro (Dark Mode), Exportação para Excel (CSV) e Login com Google.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+COMO RODAR O PROJETO
 
-### `npm test`
+1. Clone o projeto:
+   git clone https://github.com/SEU_USUARIO/finance-control.git
+   cd finance-control
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+2. Instale as dependências:
+   npm install
 
-### `npm run build`
+3. Configure as chaves:
+   Crie um arquivo chamado ".env" na raiz e coloque suas credenciais do Supabase:
+   REACT_APP_SUPABASE_URL=sua_url
+   REACT_APP_SUPABASE_ANON_KEY=sua_chave
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+4. Inicie o projeto:
+   npm start
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+CONFIGURAÇÃO DO BANCO DE DADOS (SUPABASE)
 
-### `npm run eject`
+Copie e cole os comandos SQL abaixo no "SQL Editor" do seu painel Supabase para criar o banco de dados:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+-- 1. Tabela de Transações (Caixa)
+create table transactions (
+id uuid default uuid_generate_v4() primary key,
+created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+description text not null, amount numeric not null, type text not null, category text not null, date date not null,
+user_id uuid references auth.users not null
+);
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+-- 2. Tabela de Investimentos
+create table investments (
+id uuid default uuid_generate_v4() primary key,
+created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+name text not null, type text not null, invested_amount numeric not null, current_value numeric not null,
+user_id uuid references auth.users not null
+);
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+-- 3. Tabela de Metas
+create table goals (
+id uuid default uuid_generate_v4() primary key,
+created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+title text not null, target_amount numeric not null, current_amount numeric not null, deadline date,
+user_id uuid references auth.users not null
+);
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+-- 4. Segurança (RLS) - Garante que cada usuário veja apenas seus dados
+alter table transactions enable row level security;
+alter table investments enable row level security;
+alter table goals enable row level security;
 
-## Learn More
+create policy "User data" on transactions for all using (auth.uid() = user_id);
+create policy "User investments" on investments for all using (auth.uid() = user_id);
+create policy "User goals" on goals for all using (auth.uid() = user_id);
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+---
 
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Desenvolvido com React 18 e Supabase.
