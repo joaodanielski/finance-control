@@ -1042,7 +1042,7 @@ export default function FinanceApp() {
 
                       <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
                         <div
-                          className="bg-gradient-to-r from-emerald-400 to-emerald-600 h-full rounded-full transition-all duration-1000"
+                          className="bg-linear-to-r from-emerald-400 to-emerald-600 h-full rounded-full transition-all duration-1000"
                           style={{ width: `${perc}%` }}
                         ></div>
                       </div>
