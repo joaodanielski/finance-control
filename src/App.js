@@ -19,7 +19,6 @@ import {
   Sun,
   Briefcase,
   TrendingUp,
-  TrendingDown,
   LayoutDashboard,
   Download,
   Target,
@@ -32,7 +31,6 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  XAxis,
   Tooltip,
 } from "recharts";
 
